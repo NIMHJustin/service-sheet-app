@@ -6,6 +6,7 @@ import { SHAREPOINT } from '../config.js';
 import { encodePath, GraphError } from './graph.js';
 import { recordFields, partFields, certificateFields } from './fields.js';
 import { certificateFileName, certificateFolder, safeName } from './calc.js';
+import { loadColumns, mapFields, missingColumns, missingMessage, RECORD_COLUMNS, PART_COLUMNS, CERTIFICATE_COLUMNS } from './columns.js';
 
 const SMALL = 4 * 1024 * 1024;
 const CHUNK = 320 * 1024 * 10; // upload sessions need multiples of 320 KiB
@@ -14,7 +15,7 @@ const site = () => '/sites/' + SHAREPOINT.siteId;
 
 export async function resolveTargets(graph, cache) {
   const hit = cache?.get();
-  if (hit?.recordsListId && hit?.partsListId && hit?.driveId) return hit;
+  if (hit?.recordsListId && hit?.partsListId && hit?.driveId && hit?.libraryListId) return hit;
   const lists = await graph.get(site() + '/lists?$select=id,displayName&$top=200');
   const byName = (n) => lists.value.find((l) => l.displayName.toLowerCase() === n.toLowerCase())?.id;
   const drives = await graph.get(site() + '/drives?$select=id,name');
@@ -25,6 +26,7 @@ export async function resolveTargets(graph, cache) {
   if (!t.partsListId) missing.push('the "' + SHAREPOINT.partsList + '" list');
   if (!t.driveId) missing.push('the "' + SHAREPOINT.certificatesLibrary + '" library');
   if (missing.length) throw new Error('SharePoint is missing ' + missing.join(', ') + '.');
+  t.libraryListId = (await graph.get('/drives/' + t.driveId + '/list?$select=id')).id;
   cache?.set(t);
   return t;
 }
@@ -62,9 +64,9 @@ function explain(e) {
   return e?.message || String(e);
 }
 
-async function findRecordItem(graph, listId, tn) {
+async function findRecordItem(graph, listId, tn, vapSnName = 'VapSN') {
   const res = await graph.get(
-    site() + '/lists/' + listId + "/items?$expand=fields($select=Title,VapSN)&$filter=fields/Title eq '" + tn.replace(/'/g, "''") + "'",
+    site() + '/lists/' + listId + '/items?$expand=fields($select=Title,' + vapSnName + ")&$filter=fields/Title eq '" + tn.replace(/'/g, "''") + "'",
     { headers: { Prefer: 'HonorNonIndexedQueriesWarningMayFailRandomly' } },
   );
   return res.value?.[0] || null;
@@ -92,6 +94,21 @@ export async function uploadRecord(input, deps) {
   };
   try {
     const t = await resolveTargets(deps.graph, deps.cache);
+    const cols = {
+      records: await loadColumns(deps.graph, site() + '/lists/' + t.recordsListId),
+      parts: await loadColumns(deps.graph, site() + '/lists/' + t.partsListId),
+      library: await loadColumns(deps.graph, site() + '/lists/' + t.libraryListId),
+    };
+    const problems = [];
+    const mr = missingColumns(RECORD_COLUMNS, cols.records);
+    const mp = missingColumns(PART_COLUMNS, cols.parts);
+    const ml = missingColumns(CERTIFICATE_COLUMNS, cols.library);
+    if (mr.length) problems.push(missingMessage('list "' + SHAREPOINT.recordsList + '"', mr));
+    if (mp.length) problems.push(missingMessage('list "' + SHAREPOINT.partsList + '"', mp));
+    if (ml.length) problems.push(missingMessage('library "' + SHAREPOINT.certificatesLibrary + '"', ml));
+    if (problems.length) throw new Error(problems.join(' '));
+    const vapSnCol = mapFields({ VapSN: 'x' }, cols.records).fields;
+    const vapSnName = Object.keys(vapSnCol)[0] || 'VapSN';
     const folder = certificateFolder(rec);
 
     // 1. Certificate PDF
@@ -103,7 +120,7 @@ export async function uploadRecord(input, deps) {
       await step('Certificate uploaded');
     }
     if (!rec.progress.pdfFields) {
-      await deps.graph.patch('/drives/' + t.driveId + '/items/' + rec.progress.pdf.id + '/listItem/fields', certificateFields(rec));
+      await deps.graph.patch('/drives/' + t.driveId + '/items/' + rec.progress.pdf.id + '/listItem/fields', mapFields(certificateFields(rec), cols.library).fields);
       rec.progress.pdfFields = true;
       await step('Certificate labelled');
     }
@@ -124,13 +141,13 @@ export async function uploadRecord(input, deps) {
     if (!rec.progress.recordId) {
       await step('Saving the record');
       try {
-        const item = await deps.graph.post(site() + '/lists/' + t.recordsListId + '/items', { fields: recordFields(rec, rec.progress.pdf.webUrl) });
+        const item = await deps.graph.post(site() + '/lists/' + t.recordsListId + '/items', { fields: mapFields(recordFields(rec, rec.progress.pdf.webUrl), cols.records).fields });
         rec.progress.recordId = item.id;
       } catch (e) {
         const dup = e instanceof GraphError && (e.status === 409 || /duplicate|unique/i.test(e.message));
         if (!dup) throw e;
-        const existing = await findRecordItem(deps.graph, t.recordsListId, rec.tn);
-        const same = existing && String(existing.fields?.VapSN || '').trim() === String(rec.values?.vSn || '').trim();
+        const existing = await findRecordItem(deps.graph, t.recordsListId, rec.tn, vapSnName);
+        const same = existing && String(existing.fields?.[vapSnName] || '').trim() === String(rec.values?.vSn || '').trim();
         if (!same) throw new Error('Tracking number ' + rec.tn + ' is already used by a different record in SharePoint.');
         rec.progress.recordId = existing.id;
       }
@@ -147,7 +164,7 @@ export async function uploadRecord(input, deps) {
       rec.progress.partsStarted = true;
       for (let i = rec.progress.partsDone || 0; i < parts.length; i++) {
         await step('Saving part ' + (i + 1) + ' of ' + parts.length);
-        await deps.graph.post(site() + '/lists/' + t.partsListId + '/items', { fields: partFields(rec, parts[i]) });
+        await deps.graph.post(site() + '/lists/' + t.partsListId + '/items', { fields: mapFields(partFields(rec, parts[i]), cols.parts).fields });
         rec.progress.partsDone = i + 1;
         await step('Part ' + (i + 1) + ' saved');
       }

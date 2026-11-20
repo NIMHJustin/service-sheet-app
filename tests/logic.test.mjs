@@ -4,6 +4,7 @@ import { tolerancePct, judge, readingStats, nextTrackingNumber, initials, safeNa
 import { recordFields, partFields, inspectionDetails } from '../src/lib/fields.js';
 import { uploadRecord } from '../src/lib/upload.js';
 import { makeGraph, GraphError } from '../src/lib/graph.js';
+import { mapFields, RECORD_COLUMNS, PART_COLUMNS, CERTIFICATE_COLUMNS } from '../src/lib/columns.js';
 import { samples } from './samples.mjs';
 
 test('tolerance is 20% for Penlon or Sigma Delta, else 15%', () => {
@@ -89,11 +90,23 @@ test('items marked Fail are counted', () => {
 
 // ---- upload against a fake SharePoint ----
 
-function fakeSharePoint({ failRecordOnce = false, duplicate = false } = {}) {
+const cols = (names, extra = []) => ({ value: [{ name: 'Title', displayName: 'Tracking Number' }, ...names.map((n) => ({ name: n, displayName: n })), ...extra] });
+
+function columnRoute(u, recordCols) {
+  if (u.includes('/drives/D2/list?')) return { id: 'L3' };
+  if (u.includes('/lists/L1/columns')) return recordCols;
+  if (u.includes('/lists/L2/columns')) return cols(PART_COLUMNS);
+  if (u.includes('/lists/L3/columns')) return cols(CERTIFICATE_COLUMNS);
+  return null;
+}
+
+function fakeSharePoint({ failRecordOnce = false, duplicate = false, recordCols = cols(RECORD_COLUMNS) } = {}) {
   const state = { files: {}, records: [], parts: [], patched: 0, failed: false };
   const json = (status, body) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
   const fetchImpl = async (url, opts) => {
     const u = decodeURIComponent(url);
+    const c = columnRoute(u, recordCols);
+    if (c) return json(200, c);
     if (u.includes('/lists?')) return json(200, { value: [{ id: 'L1', displayName: 'Service Records' }, { id: 'L2', displayName: 'Parts Used' }] });
     if (u.includes('/drives?')) return json(200, { value: [{ id: 'D1', name: 'Documents' }, { id: 'D2', name: 'Service Certificates' }] });
     if (opts.method === 'PUT' && u.includes('/drives/D2/root:/')) {
@@ -176,6 +189,8 @@ test('a record already in SharePoint with the same serial is adopted, a differen
 
 test('unknown column errors are explained in plain words', async () => {
   const fetchImpl = async (url, opts) => {
+    const c = columnRoute(decodeURIComponent(url), cols(RECORD_COLUMNS));
+    if (c) return new Response(JSON.stringify(c), { status: 200, headers: { 'Content-Type': 'application/json' } });
     if (url.includes('/lists?')) return new Response(JSON.stringify({ value: [{ id: 'L1', displayName: 'Service Records' }, { id: 'L2', displayName: 'Parts Used' }] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     if (url.includes('/drives?')) return new Response(JSON.stringify({ value: [{ id: 'D2', name: 'Service Certificates' }] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     if (opts.method === 'PUT') return new Response(JSON.stringify({ id: 'F1', webUrl: 'u' }), { status: 201, headers: { 'Content-Type': 'application/json' } });
@@ -186,4 +201,36 @@ test('unknown column errors are explained in plain words', async () => {
   const out = await uploadRecord({ ...structuredClone(samples.cedars), id: '1', status: 'pending' }, d);
   assert.equal(out.status, 'error');
   assert.match(out.error, /no column named "LeakYoke"/);
+});
+
+test('columns are matched by display name; Hyperlink and missing optional columns are skipped', () => {
+  const columns = [
+    { name: 'Facility', displayName: 'Facility' },
+    { name: 'Vap_x0020_SN', displayName: 'Vap SN' },
+    { name: 'CertificateLink', displayName: 'CertificateUrl', hyperlinkOrPicture: {} },
+  ];
+  const r = mapFields({ Title: 'T', Facility: 'A', VapSN: 'B', CertificateUrl: 'u', Zip: '1' }, columns);
+  assert.deepEqual(r.fields, { Title: 'T', Facility: 'A', Vap_x0020_SN: 'B' });
+  assert.deepEqual(r.skipped, ['CertificateUrl']);
+  assert.deepEqual(r.missing, ['Zip']);
+});
+
+test('a renamed Hyperlink certificate column no longer blocks the upload', async () => {
+  const names = RECORD_COLUMNS.filter((n) => n !== 'CertificateUrl');
+  const sp = fakeSharePoint({ recordCols: cols(names, [{ name: 'CertificateLink', displayName: 'CertificateUrl', hyperlinkOrPicture: {} }]) });
+  const { d } = deps(sp.graph);
+  const out = await uploadRecord({ ...structuredClone(samples.cedars), id: '1', status: 'pending' }, d);
+  assert.equal(out.status, 'uploaded', out.error);
+  assert.equal(sp.state.records[0].CertificateUrl, undefined);
+  assert.equal(sp.state.records[0].CertificateLink, undefined);
+});
+
+test('all missing columns are reported together before anything is uploaded', async () => {
+  const names = RECORD_COLUMNS.filter((n) => !['LeakO2', 'LeakYoke', 'ConcPsi'].includes(n));
+  const sp = fakeSharePoint({ recordCols: cols(names) });
+  const { d } = deps(sp.graph);
+  const out = await uploadRecord({ ...structuredClone(samples.cedars), id: '1', status: 'pending' }, d);
+  assert.equal(out.status, 'error');
+  assert.match(out.error, /"ConcPsi", "LeakO2", "LeakYoke"|"LeakO2", "LeakYoke", "ConcPsi"/);
+  assert.equal(Object.keys(sp.state.files).length, 0);
 });

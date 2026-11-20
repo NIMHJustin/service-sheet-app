@@ -1,0 +1,27 @@
+{
+  "name": "service-sheet-app",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test tests/*.test.mjs",
+    "prebuild": "node scripts/decode-assets.mjs"
+  },
+  "dependencies": {
+    "@azure/msal-browser": "5.30.0",
+    "idb-keyval": "6.3.0",
+    "jspdf": "4.2.1",
+    "preact": "11.2.0"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "2.10.6",
+    "vite": "8.3.8",
+    "vite-plugin-pwa": "2.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

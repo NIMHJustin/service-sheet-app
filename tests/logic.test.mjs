@@ -4,7 +4,7 @@ import { tolerancePct, judge, readingStats, nextTrackingNumber, initials, safeNa
 import { recordFields, partFields, inspectionDetails } from '../src/lib/fields.js';
 import { uploadRecord } from '../src/lib/upload.js';
 import { makeGraph, GraphError } from '../src/lib/graph.js';
-import { mapFields, RECORD_COLUMNS, PART_COLUMNS, CERTIFICATE_COLUMNS } from '../src/lib/columns.js';
+import { mapFields, coerce, RECORD_COLUMNS, PART_COLUMNS, CERTIFICATE_COLUMNS } from '../src/lib/columns.js';
 import { samples } from './samples.mjs';
 
 test('tolerance is 20% for Penlon or Sigma Delta, else 15%', () => {
@@ -233,4 +233,28 @@ test('all missing columns are reported together before anything is uploaded', as
   assert.equal(out.status, 'error');
   assert.match(out.error, /"ConcPsi", "LeakO2", "LeakYoke"|"LeakO2", "LeakYoke", "ConcPsi"/);
   assert.equal(Object.keys(sp.state.files).length, 0);
+});
+
+test('values are converted to each column type', () => {
+  assert.deepEqual(coerce({ number: {} }, '90048'), { value: 90048 });
+  assert.deepEqual(coerce({ currency: {} }, 225), { value: 225 });
+  assert.ok(coerce({ number: {} }, 'abc').skip);
+  assert.deepEqual(coerce({ text: {} }, 1.92), { value: '1.92' });
+  assert.deepEqual(coerce({ text: {} }, true), { value: 'Yes' });
+  assert.deepEqual(coerce({ boolean: {} }, 'Yes'), { value: true });
+  assert.deepEqual(coerce({ choice: { choices: ['Machine + Vaporizer', 'Vaporizer only'] } }, 'Machine + vaporizer'), { value: 'Machine + Vaporizer' });
+  assert.ok(coerce({ choice: { choices: ['A'] } }, 'B').skip);
+  assert.deepEqual(coerce({ choice: { choices: ['A'], allowTextEntry: true } }, 'B'), { value: 'B' });
+  const long = 'x'.repeat(300);
+  const t = coerce({ text: { allowMultipleLines: false, maxLength: 255 } }, long);
+  assert.equal(t.value.length, 255);
+  assert.equal(coerce({ text: { allowMultipleLines: true } }, long).value.length, 300);
+  assert.ok(coerce({ personOrGroup: {} }, 'x').skip);
+});
+
+test('errors name the step that failed', async () => {
+  const sp = fakeSharePoint({ failRecordOnce: true });
+  const { d } = deps(sp.graph);
+  const out = await uploadRecord({ ...structuredClone(samples.cedars), id: '1', status: 'pending' }, d);
+  assert.match(out.error, /^Saving the record: SharePoint error 500/);
 });

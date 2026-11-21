@@ -12,8 +12,39 @@ const norm = (s) => String(s || '')
   .replace(/[^a-z0-9]/g, '');
 
 export async function loadColumns(graph, listPath) {
-  const res = await graph.get(listPath + '/columns?$select=name,displayName,readOnly,hyperlinkOrPicture,hidden');
+  const res = await graph.get(listPath + '/columns');
   return (res.value || []).filter((c) => !c.hidden);
+}
+
+// Converts a value to what the column's type accepts. Returns { value } or { skip: reason }.
+export function coerce(col, v) {
+  if (v === undefined || v === null) return { skip: 'empty' };
+  if (col.personOrGroup || col.lookup || col.calculated || col.term || col.geolocation || col.thumbnail || col.contentApprovalStatus) {
+    return { skip: 'column type cannot be written' };
+  }
+  if (col.hyperlinkOrPicture) return { skip: 'Hyperlink columns cannot be written' };
+  if (col.boolean) {
+    if (typeof v === 'boolean') return { value: v };
+    return { value: /^(yes|true|1|present)$/i.test(String(v).trim()) };
+  }
+  if (col.number || col.currency) {
+    const n = typeof v === 'number' ? v : Number(String(v).replace(/[$,%\s]/g, ''));
+    return Number.isFinite(n) ? { value: n } : { skip: 'not a number' };
+  }
+  if (col.dateTime) return { value: v };
+  if (col.choice) {
+    const choices = col.choice.choices || [];
+    const hit = choices.find((c) => norm(c) === norm(v));
+    if (hit !== undefined) return { value: hit };
+    if (col.choice.allowTextEntry) return { value: String(v) };
+    return { skip: '"' + v + '" is not one of its choices' };
+  }
+  if (!col.text) return { value: v }; // unknown type: send as is
+  // text (single or multiple lines): send as text, within the column's limit
+  let s = typeof v === 'boolean' ? (v ? 'Yes' : 'No') : String(v);
+  const max = col.text?.allowMultipleLines ? 0 : (col.text?.maxLength || 255);
+  if (max && s.length > max) return { value: s.slice(0, max - 1) + '…', note: 'shortened to fit' };
+  return { value: s };
 }
 
 // fields: { AppName: value }  ->  { fields: { internalName: value }, missing: [AppName], skipped: [AppName] }
@@ -26,6 +57,7 @@ export function mapFields(fields, columns) {
   const out = {};
   const missing = [];
   const skipped = [];
+  const notes = [];
   for (const [k, v] of Object.entries(fields)) {
     if (k === 'Title') { out.Title = v; continue; }
     const col = byName.get(k) || byNorm.get(norm(k));
@@ -33,14 +65,16 @@ export function mapFields(fields, columns) {
       if (OPTIONAL.has(k)) skipped.push(k); else missing.push(k);
       continue;
     }
-    if (col.hyperlinkOrPicture) {
-      // Microsoft Graph cannot write Hyperlink columns.
+    const c = coerce(col, v);
+    if (c.skip) {
       skipped.push(k);
+      if (c.skip !== 'empty') notes.push(k + ' not saved: ' + c.skip);
       continue;
     }
-    out[col.name] = v;
+    if (c.note) notes.push(k + ' ' + c.note);
+    out[col.name] = c.value;
   }
-  return { fields: out, missing, skipped };
+  return { fields: out, missing, skipped, notes };
 }
 
 export function missingMessage(where, missing) {

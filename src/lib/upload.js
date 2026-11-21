@@ -88,7 +88,15 @@ async function countParts(graph, listId, tn) {
 export async function uploadRecord(input, deps) {
   const rec = structuredClone(input);
   rec.progress = rec.progress || {};
+  let stage = 'Connecting to SharePoint';
+  const notes = new Set();
+  const map = (fields, columns) => {
+    const m = mapFields(fields, columns);
+    for (const n of m.notes) notes.add(n);
+    return m.fields;
+  };
   const step = async (text) => {
+    if (/^(Uploading|Saving|Labelling)/.test(text)) stage = text;
     await deps.save(rec);
     deps.onStep?.(rec, text);
   };
@@ -120,7 +128,8 @@ export async function uploadRecord(input, deps) {
       await step('Certificate uploaded');
     }
     if (!rec.progress.pdfFields) {
-      await deps.graph.patch('/drives/' + t.driveId + '/items/' + rec.progress.pdf.id + '/listItem/fields', mapFields(certificateFields(rec), cols.library).fields);
+      await step('Labelling the certificate');
+      await deps.graph.patch('/drives/' + t.driveId + '/items/' + rec.progress.pdf.id + '/listItem/fields', map(certificateFields(rec), cols.library));
       rec.progress.pdfFields = true;
       await step('Certificate labelled');
     }
@@ -141,7 +150,7 @@ export async function uploadRecord(input, deps) {
     if (!rec.progress.recordId) {
       await step('Saving the record');
       try {
-        const item = await deps.graph.post(site() + '/lists/' + t.recordsListId + '/items', { fields: mapFields(recordFields(rec, rec.progress.pdf.webUrl), cols.records).fields });
+        const item = await deps.graph.post(site() + '/lists/' + t.recordsListId + '/items', { fields: map(recordFields(rec, rec.progress.pdf.webUrl), cols.records) });
         rec.progress.recordId = item.id;
       } catch (e) {
         const dup = e instanceof GraphError && (e.status === 409 || /duplicate|unique/i.test(e.message));
@@ -164,7 +173,7 @@ export async function uploadRecord(input, deps) {
       rec.progress.partsStarted = true;
       for (let i = rec.progress.partsDone || 0; i < parts.length; i++) {
         await step('Saving part ' + (i + 1) + ' of ' + parts.length);
-        await deps.graph.post(site() + '/lists/' + t.partsListId + '/items', { fields: mapFields(partFields(rec, parts[i]), cols.parts).fields });
+        await deps.graph.post(site() + '/lists/' + t.partsListId + '/items', { fields: map(partFields(rec, parts[i]), cols.parts) });
         rec.progress.partsDone = i + 1;
         await step('Part ' + (i + 1) + ' saved');
       }
@@ -173,6 +182,7 @@ export async function uploadRecord(input, deps) {
     rec.status = 'uploaded';
     rec.uploadedAt = new Date().toISOString();
     rec.error = null;
+    rec.notes = [...notes];
     await step('Uploaded');
     return rec;
   } catch (e) {
@@ -183,7 +193,7 @@ export async function uploadRecord(input, deps) {
       throw e;
     }
     rec.status = 'error';
-    rec.error = explain(e);
+    rec.error = stage + ': ' + explain(e);
     await deps.save(rec);
     deps.onStep?.(rec, rec.error);
     return rec;

@@ -58,6 +58,7 @@ export function Outbox({ records, online, account, authReady, signInNeeded, uplo
             )}
             <button type="button" class="btn link" onClick={() => remove(r)}>{r.status === 'uploaded' ? 'Remove' : 'Delete'}</button>
             {r.status === 'error' && r.error && <div class="err">{r.error}</div>}
+            {r.status === 'uploaded' && r.notes?.length > 0 && <div class="muted" style="width:100%;font-size:14px">Uploaded with notes: {r.notes.join('; ')}</div>}
           </div>
         );
       })}

@@ -8,8 +8,25 @@ import {
 } from '../lib/calc.js';
 import * as store from '../lib/store.js';
 import { LockIcon, CheckIcon } from './icons.jsx';
+import { normSn } from '../lib/fleet.js';
 
-export function Form({ rec, change, lock, setLock, records, close, submit, preview }) {
+function FleetNote({ rec, change, units }) {
+  const sn = normSn(rec.values.vSn);
+  const u = sn ? units.find((x) => normSn(x.sn) === sn) : null;
+  if (!u) return null;
+  const missing = !rec.values.vMfr || !rec.values.vModel || !rec.values.vAgent;
+  const fill = () => change((r) => ({ ...r, values: { ...r.values, vMfr: r.values.vMfr || u.mfr, vModel: r.values.vModel || u.model, vAgent: r.values.vAgent || u.agent } }));
+  return (
+    <div class="banner info" style="border-radius:12px">
+      <span class="grow">
+        <b>{u.fleet} fleet unit</b> · {u.status}{u.nextDue ? ' · test due ' + usDate(u.nextDue) : ''}. When this record uploads, the unit's efficacy test date is updated{u.status === 'In service' ? ', and it goes back in stock if everything passes' : ''}.
+      </span>
+      {missing && (u.mfr || u.model) && <button type="button" class="btn small" onClick={fill}>Fill in make and model</button>}
+    </div>
+  );
+}
+
+export function Form({ rec, change, lock, setLock, records, close, submit, preview, fleetUnits = [] }) {
   const secs = sections(rec.mode);
   const idx = Math.min(rec.sec || 0, secs.length - 1);
   const cur = secs[idx];
@@ -35,6 +52,7 @@ export function Form({ rec, change, lock, setLock, records, close, submit, previ
         <div class="pane-body">
           <h1 style="font-size:28px">{cur.label}</h1>
           {cur.key === 'site' && <SiteLock rec={rec} lock={lock} setLock={setLock} />}
+          {cur.key === 'vap' && <FleetNote rec={rec} change={change} units={fleetUnits} />}
           {cur.kind === 'fields' && <FieldsSection sec={cur} rec={rec} change={change} lock={lock} />}
           {cur.kind === 'output' && <Readings rec={rec} change={change} />}
           {cur.kind === 'notes' && <Notes rec={rec} change={change} />}

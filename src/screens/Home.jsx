@@ -5,7 +5,7 @@ const when = (iso) => {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ', ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 };
 
-export function Home({ start, resume, discard, drafts, lock, setLock, lastSite, records, goOutbox }) {
+export function Home({ start, resume, discard, drafts, lock, setLock, lastSite, records, goOutbox, fleetAlerts, goFleet }) {
   const waiting = records.filter((r) => r.status === 'pending' || r.status === 'uploading' || r.status === 'error').length;
   const uploaded = records.filter((r) => r.status === 'uploaded').length;
   const lockedName = lock ? [lock.values.facility, lock.values.city, lock.values.state].filter(Boolean).join(', ') : '';
@@ -58,6 +58,20 @@ export function Home({ start, resume, discard, drafts, lock, setLock, lastSite, 
               <button type="button" class="btn link" onClick={() => discard(d)}>Discard</button>
             </div>
           ))}
+        </section>
+      )}
+
+      {fleetAlerts && (fleetAlerts.overdueLoans.length > 0 || fleetAlerts.testsDue.length > 0) && (
+        <section class="card">
+          <div class="row">
+            <div class="grow">
+              <h2>Fleet</h2>
+              <span class="muted">
+                {fleetAlerts.overdueLoans.length} loan{fleetAlerts.overdueLoans.length === 1 ? '' : 's'} overdue · {fleetAlerts.testsDue.length} efficacy test{fleetAlerts.testsDue.length === 1 ? '' : 's'} due within 30 days
+              </span>
+            </div>
+            <button type="button" class="btn" onClick={goFleet}>Open fleet</button>
+          </div>
         </section>
       )}
 

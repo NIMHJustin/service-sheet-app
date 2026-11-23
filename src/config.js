@@ -13,7 +13,15 @@ export const SHAREPOINT = {
   recordsList: 'Service Records',
   partsList: 'Parts Used',
   certificatesLibrary: 'Service Certificates',
+  fleetList: 'Fleet Vaporizers',
+  movesList: 'Fleet Movements',
 };
+
+// Where fleet units sit when they are not out: shown as their location.
+export const HOME_LOCATION = 'VetEquip';
+
+// Annual efficacy test.
+export const FLEET_TEST_MONTHS = 12;
 
 export const GRAPH = 'https://graph.microsoft.com/v1.0';
 

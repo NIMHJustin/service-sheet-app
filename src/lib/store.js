@@ -75,3 +75,23 @@ export function newId() {
   if (globalThis.crypto?.randomUUID) return crypto.randomUUID();
   return 'id-' + Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
+
+// ----- fleet: downloaded copy of the Fleet Vaporizers list, and the queue of changes made here -----
+
+const fleetKv = createStore('service-sheet-fleet', 'kv');
+
+export async function getFleet() {
+  return (await get('units', fleetKv)) || { units: [], syncedAt: null, missing: false };
+}
+
+export async function setFleet(data) {
+  await set('units', data, fleetKv);
+}
+
+export async function getFleetQueue() {
+  return (await get('queue', fleetKv)) || [];
+}
+
+export async function setFleetQueue(q) {
+  await set('queue', q, fleetKv);
+}

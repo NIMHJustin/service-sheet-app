@@ -6,6 +6,7 @@ import { SHAREPOINT } from '../config.js';
 import { encodePath, GraphError } from './graph.js';
 import { recordFields, partFields, certificateFields } from './fields.js';
 import { certificateFileName, certificateFolder, safeName } from './calc.js';
+import { recordFleetService } from './fleet.js';
 import { loadColumns, mapFields, missingColumns, missingMessage, RECORD_COLUMNS, PART_COLUMNS, CERTIFICATE_COLUMNS } from './columns.js';
 
 const SMALL = 4 * 1024 * 1024;
@@ -177,6 +178,14 @@ export async function uploadRecord(input, deps) {
         rec.progress.partsDone = i + 1;
         await step('Part ' + (i + 1) + ' saved');
       }
+    }
+
+    // 5. Fleet unit: if this vaporizer is a loaner or exchange unit, record its efficacy test.
+    if (!rec.progress.fleet) {
+      await step('Saving the fleet unit\'s test date');
+      const updated = await (deps.fleetService || recordFleetService)(deps.graph, rec);
+      rec.progress.fleet = updated ? updated.sn : 'not a fleet unit';
+      await step('Fleet checked');
     }
 
     rec.status = 'uploaded';

@@ -139,3 +139,7 @@ h2 { margin: 0; font-size: 17px; font-weight: 700; }
   .readings .range { display: none; }
   .review dt { width: 150px; }
 }
+
+.warn-text { color: var(--warn-ink); font-weight: 600; }
+.bad { font-weight: 600; }
+.status.muted { background: #EEF1F4; color: var(--mute); }

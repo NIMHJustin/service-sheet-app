@@ -7,11 +7,11 @@ const STATUS = {
   error: ['Needs attention', 'error'],
 };
 
-export function Outbox({ records, online, account, authReady, signInNeeded, uploading, note, upload, signIn, signOut, retry, remove, view, newRecord }) {
+export function Outbox({ records, online, account, authReady, signInNeeded, uploading, note, upload, signIn, signOut, retry, remove, view, newRecord, fleetWaiting = 0 }) {
   const sorted = records.slice().sort((a, b) => (b.submittedAt || '').localeCompare(a.submittedAt || ''));
-  const waiting = records.filter((r) => r.status === 'pending' || r.status === 'uploading').length;
+  const waiting = records.filter((r) => r.status === 'pending' || r.status === 'uploading').length + fleetWaiting;
   let msg;
-  if (!records.length) msg = 'No records on this tablet yet. Submitted records appear here.';
+  if (!records.length && !fleetWaiting) msg = 'No records on this tablet yet. Submitted records appear here.';
   else if (uploading) msg = note || 'Uploading...';
   else if (!waiting) msg = 'Everything on this tablet has been uploaded.';
   else if (!online) msg = 'No connection. ' + waiting + ' record' + (waiting === 1 ? ' is' : 's are') + ' safe on this tablet and will upload when you are online.';
@@ -37,6 +37,7 @@ export function Outbox({ records, online, account, authReady, signInNeeded, uplo
         </div>
       )}
       <p class="muted" style="margin:0;font-size:16px" role="status">{msg}</p>
+      {fleetWaiting > 0 && <p class="muted" style="margin:0">Includes {fleetWaiting} fleet change{fleetWaiting === 1 ? '' : 's'}; see the Fleet screen.</p>}
 
       {sorted.map((r) => {
         const [label, cls] = STATUS[r.status] || STATUS.pending;

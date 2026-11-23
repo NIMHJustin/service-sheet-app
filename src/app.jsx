@@ -12,6 +12,8 @@ import { nextTrackingNumber, todayIso, certificateFileName } from './lib/calc.js
 import { Home } from './screens/Home.jsx';
 import { Form } from './screens/Form.jsx';
 import { Outbox } from './screens/Outbox.jsx';
+import { Fleet } from './screens/Fleet.jsx';
+import { currentUnits, resolveFleet, uploadAction, fetchUnits, fleetAlerts } from './lib/fleet.js';
 
 const KEEP_UPLOADED_DAYS = 30;
 
@@ -58,6 +60,8 @@ export function App() {
   const [uploading, setUploading] = useState(false);
   const [uploadNote, setUploadNote] = useState('');
   const [update, setUpdate] = useState(null);
+  const [fleet, setFleetState] = useState({ units: [], syncedAt: null, missing: false });
+  const [fleetQueue, setFleetQueueState] = useState([]);
   const online = useOnline();
   const saveTimer = useRef(null);
   const busy = useRef(false);
@@ -74,6 +78,8 @@ export function App() {
         if (r.status === 'uploaded' && r.uploadedAt && Date.parse(r.uploadedAt) < cutoff) await store.deleteRecord(r.id);
       }
       await refresh();
+      setFleetState(await store.getFleet());
+      setFleetQueueState(await store.getFleetQueue());
       loadLogo();
       try {
         await auth.init();
@@ -143,6 +149,54 @@ export function App() {
     setScreen('outbox');
   };
 
+  // ----- fleet -----
+  const queueFleet = async (a) => {
+    const q = [...(await store.getFleetQueue()), { ...a, id: store.newId(), tech, queuedAt: new Date().toISOString() }];
+    await store.setFleetQueue(q);
+    setFleetQueueState(q);
+  };
+  const dropFleetAction = async (a) => {
+    if (!confirm('Cancel this change? It has not been uploaded.')) return;
+    const q = (await store.getFleetQueue()).filter((x) => x.id !== a.id);
+    await store.setFleetQueue(q);
+    setFleetQueueState(q);
+  };
+
+  // Uploads queued fleet changes in order, then downloads the current fleet list.
+  const syncFleet = async (graph) => {
+    const fl = await resolveFleet(graph);
+    if (!fl) {
+      const f = { ...(await store.getFleet()), missing: true };
+      await store.setFleet(f);
+      setFleetState(f);
+      return;
+    }
+    let q = await store.getFleetQueue();
+    while (q.length) {
+      const a = q[0];
+      setUploadNote('Fleet: ' + a.kind + ' ' + (a.sn || a.data?.sn || ''));
+      try {
+        const saveProgress = async (x) => {
+          q = [x, ...q.slice(1)];
+          await store.setFleetQueue(q);
+        };
+        await uploadAction(graph, fl, { ...a, error: null }, saveProgress);
+        q = q.slice(1);
+        await store.setFleetQueue(q);
+        setFleetQueueState(q);
+      } catch (e) {
+        if (e?.name === 'SignInNeeded' || e?.name === 'Offline') throw e;
+        q = [{ ...q[0], error: e?.message || String(e) }, ...q.slice(1)];
+        await store.setFleetQueue(q);
+        setFleetQueueState(q);
+        break;
+      }
+    }
+    const f = { units: await fetchUnits(graph, fl), syncedAt: new Date().toISOString(), missing: false };
+    await store.setFleet(f);
+    setFleetState(f);
+  };
+
   // ----- upload -----
   const uploadAll = useCallback(async () => {
     if (busy.current) return;
@@ -163,6 +217,8 @@ export function App() {
           onStep: (rec, text) => { setUploadNote(rec.tn + ': ' + text); refresh(); },
         });
       }
+      await syncFleet(graph);
+      setUploadNote('');
       setSignInNeeded(false);
     } catch (e) {
       if (e?.name === 'SignInNeeded') setSignInNeeded(true);
@@ -177,10 +233,31 @@ export function App() {
 
   const pendingCount = records.filter((r) => r.status === 'pending' || r.status === 'uploading').length;
 
+  const fleetWaiting = fleetQueue.filter((a) => !a.error).length;
+
   // Upload automatically when online, signed in and something is waiting.
   useEffect(() => {
-    if (online && account && pendingCount && !busy.current && !signInNeeded) uploadAll();
-  }, [online, account, pendingCount, signInNeeded, uploadAll]);
+    if (online && account && (pendingCount || fleetWaiting) && !busy.current && !signInNeeded) uploadAll();
+  }, [online, account, pendingCount, fleetWaiting, signInNeeded, uploadAll]);
+
+  // Refresh the fleet list once per app start when online.
+  const fleetFetched = useRef(false);
+  useEffect(() => {
+    if (online && account && !fleetFetched.current && !signInNeeded) {
+      fleetFetched.current = true;
+      uploadAll();
+    }
+  }, [online, account, signInNeeded, uploadAll]);
+
+  const units = currentUnits(fleet.units, fleetQueue);
+  const alerts = fleetAlerts(units);
+  const facilities = [...new Set(records.map((r) => r.values?.facility).filter(Boolean))].sort();
+  const retryFleet = async () => {
+    const q = (await store.getFleetQueue()).map((a) => ({ ...a, error: null }));
+    await store.setFleetQueue(q);
+    setFleetQueueState(q);
+    uploadAll();
+  };
 
   const retry = async (rec) => {
     await store.saveRecord({ ...rec, status: 'pending', error: null });
@@ -212,7 +289,8 @@ export function App() {
           </select>
         </div>
         <span class={'chip ' + (online ? 'on' : 'off')}>{online ? 'Online' : 'Offline'}</span>
-        <button type="button" class="btn" onClick={() => setScreen('outbox')}>Outbox · {pendingCount} waiting</button>
+        <button type="button" class="btn" onClick={() => setScreen('fleet')}>Fleet{alerts.overdueLoans.length + alerts.testsDue.length ? ' · ' + (alerts.overdueLoans.length + alerts.testsDue.length) + ' due' : ''}</button>
+        <button type="button" class="btn" onClick={() => setScreen('outbox')}>Outbox · {pendingCount + fleetWaiting} waiting</button>
       </header>
       {update && (
         <div class="banner info" role="status">
@@ -224,12 +302,14 @@ export function App() {
         <Home
           start={start} resume={resume} discard={discard} drafts={records.filter((r) => r.status === 'draft')}
           lock={lock} setLock={setLock} lastSite={lastSite} records={records} goOutbox={() => setScreen('outbox')}
+          fleetAlerts={units.length ? alerts : null} goFleet={() => setScreen('fleet')}
         />
       )}
       {screen === 'form' && draft && (
         <Form
           rec={draft} change={changeDraft} tech={tech} lock={lock} setLock={setLock}
           records={records} close={() => { setScreen('home'); }} submit={submit} preview={(tn) => openPdf({ ...draft, tn })}
+          fleetUnits={units}
         />
       )}
       {screen === 'outbox' && (
@@ -237,6 +317,14 @@ export function App() {
           records={records.filter((r) => r.status !== 'draft')} online={online} account={account} authReady={authReady}
           signInNeeded={signInNeeded} uploading={uploading} note={uploadNote} upload={uploadAll} signIn={signIn}
           signOut={auth.signOut} retry={retry} remove={remove} view={openPdf} newRecord={() => setScreen('home')}
+          fleetWaiting={fleetWaiting}
+        />
+      )}
+      {screen === 'fleet' && (
+        <Fleet
+          units={units} queue={fleetQueue} syncedAt={fleet.syncedAt} missing={fleet.missing} online={online} account={account}
+          syncing={uploading} sync={uploadAll} queueAction={queueFleet} retryQueue={retryFleet} dropAction={dropFleetAction}
+          facilities={facilities}
         />
       )}
     </div>

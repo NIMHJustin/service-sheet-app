@@ -16,8 +16,12 @@ export async function loadColumns(graph, listPath) {
   return (res.value || []).filter((c) => !c.hidden);
 }
 
+// Marks a field to be emptied in SharePoint (a plain null or undefined is simply not sent).
+export const CLEAR = '\u0000clear';
+
 // Converts a value to what the column's type accepts. Returns { value } or { skip: reason }.
 export function coerce(col, v) {
+  if (v === CLEAR) return { value: col.text ? '' : null };
   if (v === undefined || v === null) return { skip: 'empty' };
   if (col.personOrGroup || col.lookup || col.calculated || col.term || col.geolocation || col.thumbnail || col.contentApprovalStatus) {
     return { skip: 'column type cannot be written' };

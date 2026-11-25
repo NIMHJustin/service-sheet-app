@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'preact/hooks';
 import { TECHNICIANS } from './data/lists.js';
 import { SITE_FIELDS } from './data/forms.js';
-import { DEFAULT_FEES } from './config.js';
+import { DEFAULT_FEES, DASHBOARD_USERS } from './config.js';
 import * as store from './lib/store.js';
 import * as auth from './lib/auth.js';
 import { makeGraph } from './lib/graph.js';
@@ -16,6 +16,7 @@ import { Fleet } from './screens/Fleet.jsx';
 import { lazy, Suspense } from 'preact/compat';
 import { existingTrackingNumbers } from './lib/upload.js';
 
+const Dashboard = lazy(() => import('./screens/Dashboard.jsx').then((m) => ({ default: m.Dashboard })));
 const Import = lazy(() => import('./screens/Import.jsx').then((m) => ({ default: m.Import })));
 import { currentUnits, resolveFleet, uploadAction, fetchUnits, fleetAlerts } from './lib/fleet.js';
 
@@ -257,6 +258,7 @@ export function App() {
     }
   }, [online, account, signInNeeded, uploadAll]);
 
+  const canDash = !!account && DASHBOARD_USERS.includes(String(account.username || '').toLowerCase());
   const units = currentUnits(fleet.units, fleetQueue);
   const alerts = fleetAlerts(units);
   const facilities = [...new Set(records.map((r) => r.values?.facility).filter(Boolean))].sort();
@@ -297,6 +299,7 @@ export function App() {
           </select>
         </div>
         <span class={'chip ' + (online ? 'on' : 'off')}>{online ? 'Online' : 'Offline'}</span>
+        {canDash && <button type="button" class="btn" onClick={() => setScreen('dashboard')}>Dashboard</button>}
         <button type="button" class="btn" onClick={() => setScreen('fleet')}>Fleet{alerts.overdueLoans.length + alerts.testsDue.length ? ' · ' + (alerts.overdueLoans.length + alerts.testsDue.length) + ' due' : ''}</button>
         <button type="button" class="btn" onClick={() => setScreen('outbox')}>Outbox · {pendingCount + fleetWaiting} waiting</button>
       </header>
@@ -327,6 +330,14 @@ export function App() {
           signOut={auth.signOut} retry={retry} remove={remove} view={openPdf} newRecord={() => setScreen('home')}
           fleetWaiting={fleetWaiting}
         />
+      )}
+      {screen === 'dashboard' && canDash && (
+        <Suspense fallback={<main class="page"><p class="muted">Loading...</p></main>}>
+          <Dashboard
+            units={units} online={online} goFleet={() => setScreen('fleet')}
+            load={async () => (await import('./lib/dashboard.js')).loadDashboardData(makeGraph(auth.token), { get: () => store.setting('targets', null), set: (v) => store.setSetting('targets', v) })}
+          />
+        </Suspense>
       )}
       {screen === 'import' && (
         <Suspense fallback={<main class="page"><p class="muted">Loading...</p></main>}>

@@ -28,3 +28,7 @@ export const GRAPH = 'https://graph.microsoft.com/v1.0';
 export const DEFAULT_FEES = { full: '225.00', vap: '100.00' };
 
 export const SUPPORT_PHONE = '800-466-6463';
+
+// Accounts that see the Dashboard. This only hides the screen; the data itself is protected
+// by SharePoint permissions.
+export const DASHBOARD_USERS = ['justin@vetequip.com'];

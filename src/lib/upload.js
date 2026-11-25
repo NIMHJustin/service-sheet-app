@@ -85,6 +85,19 @@ async function countParts(graph, listId, tn) {
   }
 }
 
+// All tracking numbers already in Service Records, for spotting duplicates before an import.
+export async function existingTrackingNumbers(graph, cache) {
+  const t = await resolveTargets(graph, cache);
+  const out = new Set();
+  let next = site() + '/lists/' + t.recordsListId + '/items?$expand=fields($select=Title)&$select=id&$top=999';
+  while (next) {
+    const res = await graph.get(next.replace(/^https:\/\/graph\.microsoft\.com\/v1\.0/, ''));
+    for (const it of res.value || []) if (it.fields?.Title) out.add(String(it.fields.Title).trim().toUpperCase());
+    next = res['@odata.nextLink'] || null;
+  }
+  return out;
+}
+
 // deps: { graph, cache, getFile(id) -> Blob, save(rec), makePdf(rec) -> Blob, onStep(rec, text) }
 export async function uploadRecord(input, deps) {
   const rec = structuredClone(input);

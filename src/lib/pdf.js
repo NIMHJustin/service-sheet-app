@@ -395,7 +395,10 @@ function buildBlocks(rec) {
 // logo: { data: Uint8Array | string, width, height } or null
 export function renderCertificate(rec, logo) {
   const full = rec.mode === 'full';
-  const title = full ? 'Anesthesia Machine Certification' : 'Vaporizer Efficacy Test';
+  const cc = rec.serviceType === 'Full cleaning and calibration';
+  const title = full ? 'Anesthesia Machine Certification' : cc ? 'Vaporizer Cleaning and Calibration' : 'Vaporizer Efficacy Test';
+  // The first two notes describe an efficacy test only; a full cleaning and calibration keeps the annual-service note.
+  const notes = full ? [] : cc ? DISCLAIMERS.slice(2) : DISCLAIMERS;
   const maxChart = full ? 220 : 240;
   const avail = PAGE_H - 2 * M;
   const W = PAGE_W - 2 * M;
@@ -423,7 +426,7 @@ export function renderCertificate(rec, logo) {
     const partBlock = section('Parts used', partsTable(rec.parts || []));
     const bottomH = Math.max(comBlock.measure(L, comW), partBlock.measure(L, partW));
     const footH = 6 * s + 13.5 * s;
-    const discH = full ? 0 : DISCLAIMERS.reduce((t, d) => t + L.wrap(d, W, 'normal').length * L.LH + 4.5 * s, 0);
+    const discH = notes.reduce((t, d) => t + L.wrap(d, W, 'normal').length * L.LH + 4.5 * s, 0);
     const gaps = 9 * s * (full ? 4 : 5);
     const nonBody = headerH + impH + bottomH + footH + discH + gaps;
     const roomRight = avail - nonBody;
@@ -518,9 +521,9 @@ export function renderCertificate(rec, logo) {
   L.text(usDate(rec.date), x, y);
   y += 13.5 * s + 9 * s;
 
-  if (!full) {
+  if (notes.length) {
     L.font('normal', L.FS, MUTE);
-    for (const d of DISCLAIMERS) {
+    for (const d of notes) {
       const lines = L.wrap(d, PAGE_W - 2 * M, 'normal');
       L.font('normal', L.FS, MUTE);
       lines.forEach((ln, i) => L.text(ln, M, y + i * L.LH));
@@ -537,7 +540,7 @@ export function renderCertificate(rec, logo) {
     const impH2 = (L2.wrap(IMPORTANT, W - 12, 'normal').length + 1) * L2.LH + 9 * 0.8;
     const bodyH = Math.max(stack(bb.left, 6).measure(L2, leftW), stack(bb.right, 6).measure(L2, rightW));
     const bottom = Math.max(section('Comments', paragraph(trial.comments)).measure(L2, comW), section('Parts used', partsTable(trial.parts || [])).measure(L2, partW));
-    const disc = full ? 0 : DISCLAIMERS.reduce((t, d) => t + L2.wrap(d, W, 'normal').length * L2.LH + 4.5 * 0.8, 0);
+    const disc = notes.reduce((t, d) => t + L2.wrap(d, W, 'normal').length * L2.LH + 4.5 * 0.8, 0);
     const total = 46.5 + impH2 + bodyH + bottom + (6 + 13.5) * 0.8 + disc + 9 * 0.8 * (full ? 4 : 5);
     return total <= avail;
   }

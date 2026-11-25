@@ -5,7 +5,7 @@ const when = (iso) => {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ', ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 };
 
-export function Home({ start, resume, discard, drafts, lock, setLock, lastSite, records, goOutbox, fleetAlerts, goFleet }) {
+export function Home({ start, resume, discard, drafts, lock, setLock, lastSite, records, goOutbox, fleetAlerts, goFleet, goImport }) {
   const waiting = records.filter((r) => r.status === 'pending' || r.status === 'uploading' || r.status === 'error').length;
   const uploaded = records.filter((r) => r.status === 'uploaded').length;
   const lockedName = lock ? [lock.values.facility, lock.values.city, lock.values.state].filter(Boolean).join(', ') : '';
@@ -83,6 +83,9 @@ export function Home({ start, resume, discard, drafts, lock, setLock, lastSite, 
           <button type="button" class="btn" onClick={goOutbox}>Open outbox</button>
         </div>
       </section>
+      <div class="row">
+        <button type="button" class="btn link" style="color:var(--accent)" onClick={goImport}>Import old PDF reports</button>
+      </div>
     </main>
   );
 }

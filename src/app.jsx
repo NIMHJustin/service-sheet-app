@@ -13,11 +13,19 @@ import { Home } from './screens/Home.jsx';
 import { Form } from './screens/Form.jsx';
 import { Outbox } from './screens/Outbox.jsx';
 import { Fleet } from './screens/Fleet.jsx';
+import { lazy, Suspense } from 'preact/compat';
+import { existingTrackingNumbers } from './lib/upload.js';
+
+const Import = lazy(() => import('./screens/Import.jsx').then((m) => ({ default: m.Import })));
 import { currentUnits, resolveFleet, uploadAction, fetchUnits, fleetAlerts } from './lib/fleet.js';
 
 const KEEP_UPLOADED_DAYS = 30;
 
 export async function makePdfBlob(rec) {
+  if (rec.importedPdfId) {
+    const original = await store.getFile(rec.importedPdfId);
+    if (original) return original;
+  }
   const logo = await loadLogo();
   return certificateBlob(rec, logo);
 }
@@ -116,7 +124,7 @@ export function App() {
     const rec = {
       id: store.newId(), mode, status: 'draft', tech, date: todayIso(), createdAt: new Date().toISOString(),
       values, readings: {}, toggles: {}, comments: '', parts: [], fee: DEFAULT_FEES[mode], files: [],
-      noteDraft: {}, noteSent: {}, sec: lock || keepSite ? 1 : 0,
+      noteDraft: {}, noteSent: {}, sec: lock || keepSite ? 1 : 0, serviceType: 'Efficacy test', location: 'Field',
     };
     setDraft(rec);
     store.saveRecord(rec).then(refresh);
@@ -302,7 +310,7 @@ export function App() {
         <Home
           start={start} resume={resume} discard={discard} drafts={records.filter((r) => r.status === 'draft')}
           lock={lock} setLock={setLock} lastSite={lastSite} records={records} goOutbox={() => setScreen('outbox')}
-          fleetAlerts={units.length ? alerts : null} goFleet={() => setScreen('fleet')}
+          fleetAlerts={units.length ? alerts : null} goFleet={() => setScreen('fleet')} goImport={() => setScreen('import')}
         />
       )}
       {screen === 'form' && draft && (
@@ -319,6 +327,15 @@ export function App() {
           signOut={auth.signOut} retry={retry} remove={remove} view={openPdf} newRecord={() => setScreen('home')}
           fleetWaiting={fleetWaiting}
         />
+      )}
+      {screen === 'import' && (
+        <Suspense fallback={<main class="page"><p class="muted">Loading...</p></main>}>
+          <Import
+            records={records} online={online} account={account}
+            checkSharePoint={() => existingTrackingNumbers(makeGraph(auth.token), { get: () => store.setting('targets', null), set: (v) => store.setSetting('targets', v) })}
+            done={async (n) => { await refresh(); setUploadNote(n + ' imported report' + (n === 1 ? '' : 's') + ' added.'); setScreen('outbox'); }}
+          />
+        </Suspense>
       )}
       {screen === 'fleet' && (
         <Fleet

@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { sections, SITE_FIELDS } from '../data/forms.js';
+import { sections, SITE_FIELDS, SERVICE_TYPES, LOCATIONS } from '../data/forms.js';
 import { LISTS, CHECK_CHOICES, TECHNICIANS } from '../data/lists.js';
 import PARTS from '../data/parts.json';
 import {
@@ -51,6 +51,7 @@ export function Form({ rec, change, lock, setLock, records, close, submit, previ
       <div class="pane">
         <div class="pane-body">
           <h1 style="font-size:28px">{cur.label}</h1>
+          {cur.key === 'site' && <JobType rec={rec} change={change} />}
           {cur.key === 'site' && <SiteLock rec={rec} lock={lock} setLock={setLock} />}
           {cur.key === 'vap' && <FleetNote rec={rec} change={change} units={fleetUnits} />}
           {cur.kind === 'fields' && <FieldsSection sec={cur} rec={rec} change={change} lock={lock} />}
@@ -70,6 +71,29 @@ export function Form({ rec, change, lock, setLock, records, close, submit, previ
         </footer>
       </div>
     </div>
+  );
+}
+
+function JobType({ rec, change }) {
+  const set = (k, v) => change((r) => ({ ...r, [k]: v }));
+  const loc = rec.location || 'Field';
+  const type = rec.serviceType || 'Efficacy test';
+  return (
+    <section class="card">
+      <div class="row">
+        <h2 style="width:150px">Work done</h2>
+        <div class="seg" role="group" aria-label="Work done">
+          {LOCATIONS.map((x) => <button type="button" key={x} aria-pressed={loc === x} onClick={() => set('location', x)}>{x === 'Field' ? 'In the field' : 'In the shop'}</button>)}
+        </div>
+      </div>
+      <div class="row">
+        <h2 style="width:150px">Service type</h2>
+        <div class="seg" role="group" aria-label="Service type">
+          {SERVICE_TYPES.map((x) => <button type="button" key={x} aria-pressed={type === x} onClick={() => set('serviceType', x)}>{x}</button>)}
+        </div>
+      </div>
+      {loc === 'Shop' && <p class="muted" style="margin:0">For shop work, enter the customer who sent the unit in as the site.</p>}
+    </section>
   );
 }
 
@@ -321,6 +345,8 @@ function Review({ rec, change, tn, preview }) {
   const lines = [
     ['Tracking number', tn],
     ['Record type', rec.mode === 'full' ? 'Machine + vaporizer' : 'Vaporizer only'],
+    ['Work done', (rec.location || 'Field') === 'Shop' ? 'In the shop' : 'In the field'],
+    ['Service type', rec.serviceType || 'Efficacy test'],
     ['Facility', rec.values.facility || 'Not entered', !rec.values.facility],
     ['Vaporizer serial number', rec.values.vSn || 'Not entered', !rec.values.vSn],
     ...(rec.mode === 'full' ? [

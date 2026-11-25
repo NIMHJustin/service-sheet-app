@@ -89,7 +89,7 @@ export function missingMessage(where, missing) {
 
 // Every column the app writes, so a missing one is reported before anything is uploaded.
 export const RECORD_COLUMNS = [
-  'RecordType', 'ServiceDate', 'Technician', 'ServiceCharge', 'Facility', 'Supervisor', 'Address', 'City', 'State', 'Zip',
+  'RecordType', 'ServiceType', 'ServiceLocation', 'Imported', 'ServiceDate', 'Technician', 'ServiceCharge', 'Facility', 'Supervisor', 'Address', 'City', 'State', 'Zip',
   'Phone', 'RoomNumber', 'MachineMfr', 'MachineModel', 'MachineSN', 'VapMfr', 'VapModel', 'VapSN', 'Agent', 'FillLevel',
   'TestLocation', 'MonitorUsed', 'TolerancePct',
   'Out1LPM_1', 'Out1LPM_2', 'Out1LPM_3', 'Out1LPM_4', 'Out1LPM_5', 'Out4LPM_1', 'Out4LPM_2', 'Out4LPM_3', 'Out4LPM_4', 'Out4LPM_5',

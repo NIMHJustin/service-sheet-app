@@ -47,7 +47,7 @@ export function Outbox({ records, online, account, authReady, signInNeeded, uplo
             <div class="info">
               <b>{r.values.facility || 'No facility'} · {r.values.vSn || 'No serial'}</b>
               <span class="muted">
-                {r.mode === 'full' ? 'Machine + vaporizer' : 'Vaporizer only'} · {usDate(r.date)} · {r.tech}
+                {r.mode === 'full' ? 'Machine + vaporizer' : 'Vaporizer only'}{r.serviceType === 'Full cleaning and calibration' ? ' · cleaning + calibration' : ''}{r.location === 'Shop' ? ' · shop' : ''}{r.imported ? ' · imported' : ''} · {usDate(r.date)} · {r.tech}
                 {r.files?.length ? ' · ' + r.files.length + ' attachment' + (r.files.length === 1 ? '' : 's') : ''}
               </span>
             </div>

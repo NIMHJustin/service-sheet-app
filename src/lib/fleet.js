@@ -268,11 +268,13 @@ export async function recordFleetService(graph, rec) {
   const units = await fetchUnits(graph, fl);
   const unit = units.find((u) => normSn(u.sn) === normSn(rec.values?.vSn));
   if (!unit) return null;
+  const older = unit.lastService && rec.date < unit.lastService;
   const { unit: updated, passed } = serviceUpdate(unit, rec);
-  await saveUnit(graph, fl, updated);
+  if (!older) await saveUnit(graph, fl, updated);
+  const what = rec.serviceType === 'Full cleaning and calibration' ? 'Cleaning and calibration' : 'Efficacy test';
   await saveMove(graph, fl, {
     sn: unit.sn, movement: 'Serviced', date: rec.date, tn: rec.tn, tech: rec.tech,
-    notes: passed ? 'Efficacy test passed' : 'Efficacy test recorded; not all readings or items passed',
+    notes: (passed ? what + ' passed' : what + ' recorded; not all readings or items passed') + (rec.imported ? ' (imported report)' : ''),
   });
-  return updated;
+  return older ? unit : updated;
 }

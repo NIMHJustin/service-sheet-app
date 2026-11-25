@@ -37,6 +37,9 @@ export function recordFields(record, certificateUrl) {
   const f = {
     Title: record.tn,
     RecordType: full ? 'Machine + vaporizer' : 'Vaporizer only',
+    ServiceType: record.serviceType || 'Efficacy test',
+    ServiceLocation: record.location || 'Field',
+    Imported: !!record.imported,
     ServiceDate: spDate(record.date),
     Technician: txt(record.tech),
     ServiceCharge: parseNum(record.fee) ?? undefined,

@@ -1,6 +1,10 @@
 // Form structure, shared by the screens, the PDF certificate and the SharePoint upload.
 // Field tuple: [id, label, type, listKey?]   type: 'in' text with suggestions, 'ck' checklist, 'ta' long text
 
+export const SERVICE_TYPES = ['Efficacy test', 'Full cleaning and calibration'];
+export const LOCATIONS = ['Field', 'Shop'];
+export const CC = SERVICE_TYPES[1];
+
 export const SITE_FIELDS = ['facility', 'supervisor', 'address', 'city', 'state', 'zip', 'phone'];
 
 export function sections(mode) {

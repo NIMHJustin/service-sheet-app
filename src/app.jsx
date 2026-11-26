@@ -344,6 +344,8 @@ export function App() {
           <Import
             records={records} online={online} account={account}
             checkSharePoint={() => existingTrackingNumbers(makeGraph(auth.token), { get: () => store.setting('targets', null), set: (v) => store.setSetting('targets', v) })}
+            findBackfill={async () => (await import('./lib/backfill.js')).findBackfill(makeGraph(auth.token), { get: () => store.setting('targets', null), set: (v) => store.setSetting('targets', v) })}
+            applyBackfill={async (c, done, onRow) => (await import('./lib/backfill.js')).applyBackfill(makeGraph(auth.token), { get: () => store.setting('targets', null), set: (v) => store.setSetting('targets', v) }, c, done, onRow)}
             done={async (n) => { await refresh(); setUploadNote(n + ' imported report' + (n === 1 ? '' : 's') + ' added.'); setScreen('outbox'); }}
           />
         </Suspense>

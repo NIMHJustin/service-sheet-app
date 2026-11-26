@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks';
 import { sections, SITE_FIELDS, SERVICE_TYPES, LOCATIONS } from '../data/forms.js';
 import { LISTS, CHECK_CHOICES, TECHNICIANS } from '../data/lists.js';
-import PARTS from '../data/parts.json';
+import { CATALOG as PARTS } from '../lib/partsFind.js';
 import {
   tolerancePct, readingRows, readingStats, itemsFailed, nextTrackingNumber, noteLine,
   partsSubtotal, money, missingForSubmit, usDate,

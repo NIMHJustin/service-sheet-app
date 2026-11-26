@@ -149,9 +149,10 @@ h2 { margin: 0; font-size: 17px; font-weight: 700; }
 
 table.imp { border-collapse: collapse; width: 100%; background: #fff; border: 1px solid var(--soft); border-radius: 12px; font-size: 14px; }
 table.imp th { text-align: left; font-weight: 600; color: var(--mute); padding: 10px 8px; border-bottom: 1px solid var(--soft); white-space: nowrap; }
-table.imp td { padding: 6px 8px; border-bottom: 1px solid var(--faint); vertical-align: middle; }
+table.imp td { padding: 6px 6px; border-bottom: 1px solid var(--faint); vertical-align: middle; }
 table.imp input[type=checkbox] { width: 22px; height: 22px; }
-.input.sm, select.sm { min-height: 40px; font-size: 14px; padding: 0 8px; min-width: 110px; }
+.input.sm, select.sm { min-height: 40px; font-size: 14px; padding: 0 8px; }
+.fname { font-size: 12px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
 
 .dash .filters { gap: 12px; }
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; }
@@ -174,3 +175,9 @@ table.imp input[type=checkbox] { width: 22px; height: 22px; }
 .bar-fill { display: block; height: 14px; background: var(--series-1); border-radius: 0 4px 4px 0; min-width: 2px; }
 .bar-val { text-align: right; font-variant-numeric: tabular-nums; }
 @media (max-width: 900px) { .two { grid-template-columns: minmax(0, 1fr); } }
+
+.chips { display: flex; flex-wrap: wrap; gap: 4px; max-width: 210px; }
+.chip-part { display: inline-flex; align-items: center; gap: 2px; padding: 2px 2px 2px 8px; border-radius: 12px; background: #E3EEF8; color: #0B3D66; font-size: 13px; white-space: nowrap; }
+.chip-part button { border: none; background: none; width: 26px; height: 26px; font-size: 16px; color: inherit; border-radius: 50%; }
+
+main.page > *, .pane-body > * { flex-shrink: 0; }

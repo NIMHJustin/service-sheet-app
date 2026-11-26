@@ -42,6 +42,7 @@ test('Eli Lily: a cleaning and calibration, with no address', async () => {
   assert.equal(r.record.values.zip, undefined);
   assert.equal(r.record.serviceType, 'Full cleaning and calibration');
   assert.match(r.record.comments, /Calibration performed, unit is in spec/);
+  assert.deepEqual(r.record.parts.map((p) => p.no), ['108104', '108105', '108107']);
 });
 
 test('Labcorp: failed readings and a failed dial stop; recommending a CC is not doing one', async () => {

@@ -1,3 +1,5 @@
+import { findParts } from './partsFind.js';
+
 // Reads old Vaporizer Efficacy Test reports: PDFs saved from the Vaporizer_Only sheet of
 // Service_Sheet_V6.2.xlsm. The text in those PDFs keeps its position on the page, so each
 // value is found to the right of its label on the same line.
@@ -148,7 +150,7 @@ export function parseReport(items) {
     record: {
       mode: 'vap', tn, date, tech, values, readings, comments,
       serviceType: inferServiceType(comments), location: 'Shop', imported: true,
-      toggles: {}, parts: [], files: [], fee: '',
+      toggles: {}, parts: findParts(comments), files: [], fee: '',
     },
   };
 }

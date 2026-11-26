@@ -1,0 +1,292 @@
+[
+ {
+  "no": "180100",
+  "mfrNo": "2300-0010",
+  "desc": "Blank Dials",
+  "price": 54.5,
+  "uom": "EACH",
+  "match": [
+   "blank dial"
+  ]
+ },
+ {
+  "no": "180101",
+  "mfrNo": "2300-0002",
+  "desc": "O'Ring (Std Filler Cap)",
+  "price": 5.5,
+  "uom": "EACH",
+  "match": [
+   "filler cap o.?rings?",
+   "o.?rings? (on|for|in) the (std |standard )?filler cap"
+  ]
+ },
+ {
+  "no": "180102",
+  "mfrNo": "2300-0020",
+  "desc": "Stop Controls",
+  "price": 2.6,
+  "uom": "EACH",
+  "match": [
+   "stop controls?"
+  ]
+ },
+ {
+  "no": "180103",
+  "mfrNo": "2300-0031",
+  "desc": "PTFE O'Ring",
+  "price": 5.4,
+  "uom": "EACH",
+  "match": [
+   "ptfe"
+  ]
+ },
+ {
+  "no": "108104",
+  "mfrNo": "2300-0032",
+  "desc": "U-Seal",
+  "price": 2.2,
+  "uom": "EACH",
+  "match": [
+   "u.?seals?"
+  ]
+ },
+ {
+  "no": "108105",
+  "mfrNo": "2300-0033",
+  "desc": "Thrust Washer",
+  "price": 2.2,
+  "uom": "EACH",
+  "match": [
+   "thrust ?washers?"
+  ]
+ },
+ {
+  "no": "108106",
+  "mfrNo": "2300-0036",
+  "desc": "Woodruff Key",
+  "price": 2.2,
+  "uom": "EACH",
+  "match": [
+   "woodruff"
+  ]
+ },
+ {
+  "no": "108107",
+  "mfrNo": "2300-0038",
+  "desc": "O'Ring Therm Cvr",
+  "price": 5.4,
+  "uom": "EACH",
+  "match": [
+   "therm(al|o)?\\.? ?(cover|cvr) o.?rings?",
+   "o.?rings? (on|for) the therm(al|o)?\\.? ?(cover|cvr)"
+  ]
+ },
+ {
+  "no": "108108",
+  "mfrNo": "2300-0045",
+  "desc": "O'Ring Sump",
+  "price": 5.4,
+  "uom": "EACH",
+  "match": [
+   "sump o.?rings?",
+   "o.?rings? (on|for) the sump"
+  ]
+ },
+ {
+  "no": "108109",
+  "mfrNo": "2300-0050",
+  "desc": "Window Glass",
+  "price": 12.0,
+  "uom": "EACH",
+  "match": [
+   "window glass",
+   "sight ?glass (window )?(was )?replaced",
+   "(new|replaced( the)?) sight ?glass"
+  ]
+ },
+ {
+  "no": "108110",
+  "mfrNo": "2300-0051",
+  "desc": "Window Gasket",
+  "price": 2.2,
+  "uom": "EACH",
+  "match": [
+   "window gaskets?"
+  ]
+ },
+ {
+  "no": "108111",
+  "mfrNo": "2300-0058",
+  "desc": "Gasket for Keyfill Bridge",
+  "price": 2.2,
+  "uom": "EACH",
+  "match": [
+   "key.?fill(er)? bridge",
+   "bridge gasket"
+  ]
+ },
+ {
+  "no": "108112",
+  "mfrNo": "2300-0059",
+  "desc": "Slipper Block/Dummy Plug",
+  "price": 22.7,
+  "uom": "EACH",
+  "match": [
+   "slipper block",
+   "dummy plug"
+  ]
+ },
+ {
+  "no": "108113",
+  "mfrNo": "2300-0061",
+  "desc": "Keyfill Assembly",
+  "price": 205.4,
+  "uom": "EACH",
+  "match": [
+   "key.?fill(er)? assembly"
+  ]
+ },
+ {
+  "no": "2300-0066",
+  "mfrNo": "2300-0066",
+  "desc": "Serial Plate Screws",
+  "price": 0.25,
+  "uom": "EACH",
+  "match": [
+   "serial plate screws?"
+  ]
+ },
+ {
+  "no": "108114",
+  "mfrNo": "2300-0068",
+  "desc": "O'Ring (Window Bdy/Filler)",
+  "price": 5.4,
+  "uom": "EACH",
+  "match": [
+   "window (body|bdy) o.?rings?",
+   "o.?rings? (on|for) the window (body|bdy)"
+  ]
+ },
+ {
+  "no": "108115",
+  "mfrNo": "2300-0135",
+  "desc": "Leaf Springs and Button",
+  "price": 17.3,
+  "uom": "EACH",
+  "match": [
+   "leaf springs?"
+  ]
+ },
+ {
+  "no": "108116",
+  "mfrNo": "2300-0505",
+  "desc": "Rotary Valve",
+  "price": 145.0,
+  "uom": "EACH",
+  "match": [
+   "rotary valve"
+  ]
+ },
+ {
+  "no": "108117",
+  "mfrNo": "2300-0515",
+  "desc": "Thermostat",
+  "price": 227.0,
+  "uom": "EACH",
+  "match": [
+   "thermostat"
+  ]
+ },
+ {
+  "no": "108118",
+  "mfrNo": "2300-1044",
+  "desc": "Outer Wick, per vaporizer (0.333 ft)",
+  "price": 9.77,
+  "uom": "EACH",
+  "match": [
+   "outer wicks?",
+   "(new|replaced( the)?|both) wicks"
+  ]
+ },
+ {
+  "no": "108119",
+  "mfrNo": "2300-1043",
+  "desc": "Inner Wick, per vaporizer (0.333 ft)",
+  "price": 9.77,
+  "uom": "EACH",
+  "match": [
+   "inner wicks?",
+   "(new|replaced( the)?|both) wicks"
+  ]
+ },
+ {
+  "no": "108120",
+  "mfrNo": "2500-1045",
+  "desc": "Wick -Spring (each)",
+  "price": 65.0,
+  "uom": "EACH",
+  "match": [
+   "wick.?springs?"
+  ]
+ },
+ {
+  "no": "108121",
+  "mfrNo": "2300-1503",
+  "desc": "Cagemount",
+  "price": 125.0,
+  "uom": "EACH",
+  "match": [
+   "cage.?mount"
+  ]
+ },
+ {
+  "no": "701465",
+  "mfrNo": "2300-1504",
+  "desc": "Selectatec",
+  "price": 165.0,
+  "uom": "EACH",
+  "match": [
+   "selectatec"
+  ]
+ },
+ {
+  "no": "2305-0503",
+  "mfrNo": "2305-0503",
+  "desc": "Standard Filler Assembly",
+  "price": 97.5,
+  "uom": "EACH",
+  "match": [
+   "(standard|std) filler assembly"
+  ]
+ },
+ {
+  "no": "",
+  "mfrNo": "",
+  "desc": "Inlet/Outlet Adapters for cagemount",
+  "price": 108.2,
+  "uom": "EACH",
+  "match": [
+   "inlet.{0,3}outlet adapters?"
+  ]
+ },
+ {
+  "no": "",
+  "mfrNo": "",
+  "desc": "Keyfiller Bottle Adapters(All Drug Type)",
+  "price": 64.85,
+  "uom": "EACH",
+  "match": [
+   "bottle adapters?"
+  ]
+ },
+ {
+  "no": "",
+  "mfrNo": "",
+  "desc": "5/8 Brackets",
+  "price": 64.85,
+  "uom": "EACH",
+  "match": [
+   "5/8\"? ?brackets?"
+  ]
+ }
+]

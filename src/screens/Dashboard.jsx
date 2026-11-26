@@ -47,7 +47,7 @@ export function Dashboard({ load, units, online, goFleet }) {
   const s = summarize(data, { range, location, facility });
   const facNames = [...new Set(data.records.map((r) => r.facility).filter(Boolean))].sort();
   const lab = bucketLabel;
-  const dueSoon = s.facilities.filter((f) => f.daysToDue <= 30).sort((a, b) => a.daysToDue - b.daysToDue);
+  const dueSoon = s.units.filter((u) => u.daysToDue <= 30).sort((a, b) => a.daysToDue - b.daysToDue);
   const top = s.facilities.filter((f) => f.inRange).sort((a, b) => b.inRange - a.inRange);
   const pct = s.passRate === null ? '-' : Math.round(s.passRate * 100) + '%';
   const rangeName = RANGES.find((r) => r[0] === range)[1].toLowerCase();
@@ -74,8 +74,8 @@ export function Dashboard({ load, units, online, goFleet }) {
         <Tile label="Services" value={s.count.toLocaleString()} note={s.shopCount + ' in the shop'} />
         <Tile label="Efficacy tests passed" value={pct} note={s.effCount + ' efficacy tests'} />
         <Tile label="Cleanings and calibrations" value={s.ccCount} note={s.followedByCc + ' of ' + s.failedTests + ' failed tests led to one'} />
-        <Tile label="Facilities served" value={s.facilitiesServed} note={dueSoon.length + ' due back within 30 days'} />
-        <Tile label="Fleet" value={fa.overdueLoans.length + fa.testsDue.length} tone={fa.overdueLoans.length + fa.testsDue.length ? 'bad' : ''} note={fa.overdueLoans.length + ' loan' + (fa.overdueLoans.length === 1 ? '' : 's') + ' overdue · ' + fa.testsDue.length + ' test' + (fa.testsDue.length === 1 ? '' : 's') + ' due'} />
+        <Tile label="Facilities served" value={s.facilitiesServed} note={dueSoon.length + ' annual inspection' + (dueSoon.length === 1 ? '' : 's') + ' due'} />
+        <Tile label="Fleet" value={fa.overdueLoans.length + fa.testsDue.length} tone={fa.overdueLoans.length + fa.testsDue.length ? 'bad' : ''} note={fa.overdueLoans.length + ' loan' + (fa.overdueLoans.length === 1 ? '' : 's') + ' overdue · ' + fa.testsDue.length + ' inspection' + (fa.testsDue.length === 1 ? '' : 's') + ' due'} />
       </div>
 
       <ColumnChart
@@ -92,19 +92,19 @@ export function Dashboard({ load, units, online, goFleet }) {
       <div class="two">
         <BarList title="Vaporizers serviced by model" rows={s.models} />
         <section class="card chart">
-          <h2>Facilities due back</h2>
-          <span class="muted" style="font-size:14px">A year after their last service; overdue or within 30 days</span>
+          <h2>Annual inspections due</h2>
+          <span class="muted" style="font-size:14px">Each vaporizer a year after its last service (efficacy test, or cleaning and calibration if needed); overdue or within 30 days</span>
           {!dueSoon.length && <p class="muted" style="margin:0">None due in the next 30 days.</p>}
           {dueSoon.length > 0 && <div style="max-height:320px;overflow-y:auto">
             <table class="imp">
-              <thead><tr><th>Facility</th><th>Last service</th><th>Due</th><th style="text-align:right">Services</th></tr></thead>
+              <thead><tr><th>Facility</th><th>Vaporizer</th><th>Last service</th><th>Due</th></tr></thead>
               <tbody>
-                {dueSoon.map((f) => (
-                  <tr key={f.facility}>
-                    <td>{f.facility}</td>
-                    <td>{usDate(f.last)}{f.lastPassed ? '' : ' (failed)'}</td>
-                    <td class={f.daysToDue < 0 ? 'bad' : 'warn-text'}>{usDate(f.due)}{f.daysToDue < 0 ? ' · ' + -f.daysToDue + ' days ago' : ''}</td>
-                    <td style="text-align:right">{f.total}</td>
+                {dueSoon.map((u) => (
+                  <tr key={u.sn}>
+                    <td>{u.facility || '-'}</td>
+                    <td>{u.sn}{u.model ? <span class="muted"> · {u.model}</span> : ''}</td>
+                    <td>{usDate(u.last)} · {u.lastType === 'Full cleaning and calibration' ? 'CC' : 'efficacy'}{u.lastPassed ? '' : ' (failed)'}</td>
+                    <td class={u.daysToDue < 0 ? 'bad' : 'warn-text'}>{usDate(u.due)}{u.daysToDue < 0 ? ' · ' + -u.daysToDue + ' days ago' : ''}</td>
                   </tr>
                 ))}
               </tbody>

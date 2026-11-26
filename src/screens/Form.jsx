@@ -19,7 +19,7 @@ function FleetNote({ rec, change, units }) {
   return (
     <div class="banner info" style="border-radius:12px">
       <span class="grow">
-        <b>{u.fleet} fleet unit</b> · {u.status}{u.nextDue ? ' · test due ' + usDate(u.nextDue) : ''}. When this record uploads, the unit's efficacy test date is updated{u.status === 'In service' ? ', and it goes back in stock if everything passes' : ''}.
+        <b>{u.fleet} fleet unit</b> · {u.status}{u.nextDue ? ' · annual inspection due ' + usDate(u.nextDue) : ''}. When this record uploads, the unit's next annual inspection is set a year out{u.status === 'In service' ? ', and it goes back in stock if everything passes' : ''}.
       </span>
       {missing && (u.mfr || u.model) && <button type="button" class="btn small" onClick={fill}>Fill in make and model</button>}
     </div>

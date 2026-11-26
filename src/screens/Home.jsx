@@ -67,7 +67,7 @@ export function Home({ start, resume, discard, drafts, lock, setLock, lastSite, 
             <div class="grow">
               <h2>Fleet</h2>
               <span class="muted">
-                {fleetAlerts.overdueLoans.length} loan{fleetAlerts.overdueLoans.length === 1 ? '' : 's'} overdue · {fleetAlerts.testsDue.length} efficacy test{fleetAlerts.testsDue.length === 1 ? '' : 's'} due within 30 days
+                {fleetAlerts.overdueLoans.length} loan{fleetAlerts.overdueLoans.length === 1 ? '' : 's'} overdue · {fleetAlerts.testsDue.length} annual inspection{fleetAlerts.testsDue.length === 1 ? '' : 's'} due within 30 days
               </span>
             </div>
             <button type="button" class="btn" onClick={goFleet}>Open fleet</button>

@@ -67,7 +67,7 @@ function ActionForm({ unit, kind, facilities, onDone, onCancel, units }) {
           <input id="fa_notes" class="input" type="text" value={f.notes} onInput={(e) => set('notes')(e.currentTarget.value)} />
         </div>
       </div>
-      {kind === 'exchange' && <p class="muted" style="margin:0">{unit.sn} goes to the customer and leaves the fleet. Their unit joins the exchange pool as In service until its efficacy test passes.</p>}
+      {kind === 'exchange' && <p class="muted" style="margin:0">{unit.sn} goes to the customer and leaves the fleet. Their unit joins the exchange pool as In service until it passes its inspection.</p>}
       {clash && <p class="bad" style="margin:0">That serial is already an active fleet unit.</p>}
       <div class="row">
         <button type="button" class="btn primary" disabled={!ok} onClick={submit}>Save</button>
@@ -96,7 +96,7 @@ function AddForm({ units, onDone, onCancel }) {
         <Text id="ad_mfr" label="Manufacturer" value={f.mfr} set={set('mfr')} list={LISTS.vapMfr} />
         <Text id="ad_model" label="Model" value={f.model} set={set('model')} list={LISTS.vapModel} />
         <Text id="ad_agent" label="Agent" value={f.agent} set={set('agent')} list={LISTS.agent} />
-        <Text id="ad_last" label="Last efficacy test (if known)" type="date" value={f.lastService} set={set('lastService')} />
+        <Text id="ad_last" label="Last service (if known)" type="date" value={f.lastService} set={set('lastService')} />
         <div class="field">
           <label for="ad_status">Status</label>
           <select id="ad_status" value={f.status} onChange={(e) => set('status')(e.currentTarget.value)}>
@@ -158,7 +158,7 @@ export function Fleet({ units, queue, syncedAt, missing, online, account, syncin
         <div class="stat"><span class="muted">Exchange units in stock</span><b>{count('Exchange', 'In stock')}</b></div>
         <div class="stat"><span class="muted">In service</span><b>{units.filter((u) => u.status === 'In service').length}</b></div>
         <div class="stat"><span class={'muted'}>Loans overdue</span><b class={alerts.overdueLoans.length ? 'bad' : ''}>{alerts.overdueLoans.length}</b></div>
-        <div class="stat"><span class="muted">Tests due within 30 days</span><b class={alerts.testsDue.length ? 'bad' : ''}>{alerts.testsDue.length}</b></div>
+        <div class="stat"><span class="muted">Annual inspections due within 30 days</span><b class={alerts.testsDue.length ? 'bad' : ''}>{alerts.testsDue.length}</b></div>
       </div>
 
       {adding && <AddForm units={units} onDone={save} onCancel={() => setAdding(false)} />}
@@ -193,7 +193,7 @@ export function Fleet({ units, queue, syncedAt, missing, online, account, syncin
                   {u.status === 'Out on loan' ? 'At ' + u.location + (u.customerSn ? ' · servicing their ' + u.customerSn : '') : u.location}
                   {back ? ' · due back ' : ''}{back && <span class={back.cls}>{back.text}</span>}
                 </span>
-                <span class="muted" style="font-size:14px">Next efficacy test: <span class={due.cls}>{due.text}</span>{u.lastTn ? ' · last ' + u.lastTn : ''}</span>
+                <span class="muted" style="font-size:14px">Annual inspection due: <span class={due.cls}>{due.text}</span>{u.lastTn ? ' · last ' + u.lastTn : ''}</span>
               </div>
               <span class={'status ' + (STATUS_CLASS[u.status] || '')}>{u.status}</span>
               {actionsFor(u).map((k) => (

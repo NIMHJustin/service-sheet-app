@@ -19,6 +19,11 @@ function reader(columns, names) {
   return (fields, n) => fields[map[n]];
 }
 
+function addYear(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(Date.UTC(y + 1, m - 1, d)).toISOString().slice(0, 10);
+}
+
 async function allItems(graph, listId) {
   const out = [];
   let next = site() + '/lists/' + listId + '/items?$expand=fields&$top=999';
@@ -188,10 +193,27 @@ export function summarize(data, filters, today = todayIso()) {
   }
   for (const r of recs) if (fac[r.facility]) fac[r.facility].inRange += 1;
   const facilities = Object.values(fac).map((f) => {
-    const [y, m, d] = f.last.split('-').map(Number);
-    const due = new Date(Date.UTC(y + 1, m - 1, d)).toISOString().slice(0, 10);
+    const due = addYear(f.last);
     return { ...f, due, daysToDue: Math.round((Date.parse(due) - Date.parse(today)) / 864e5) };
   });
+
+  // Annual inspection: every vaporizer is due a year after its last service of either kind
+  // (an efficacy test, or a cleaning and calibration when one was needed).
+  const unitLast = {};
+  for (const r of data.records) {
+    const k = normSn(r.sn);
+    if (!k) continue;
+    const u = unitLast[k];
+    if (!u || r.date > u.date) unitLast[k] = r;
+  }
+  const units = Object.values(unitLast).map((r) => {
+    const due = addYear(r.date);
+    return {
+      sn: r.sn, facility: r.facility, model: [r.mfr, r.model].filter(Boolean).join(' '),
+      last: r.date, lastType: r.type, lastPassed: passed(r), tn: r.tn,
+      due, daysToDue: Math.round((Date.parse(due) - Date.parse(today)) / 864e5),
+    };
+  }).filter((u) => !filters.facility || filters.facility === 'All' || u.facility === filters.facility);
 
   // Revenue
   const charges = blank(), partsRev = blank();
@@ -227,6 +249,7 @@ export function summarize(data, filters, today = todayIso()) {
     models,
     failedItems,
     facilities,
+    units,
     revenue: { charges, parts: partsRev, total: recs.reduce((t, r) => t + r.charge + r.parts, 0), chargedRecords: recs.filter((r) => r.charge > 0).length },
     topParts,
   };
